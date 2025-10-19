@@ -1,0 +1,7 @@
+run = ["python3", "main.py"]
+entrypoint = "main.py"
+modules = ["python3-basic"]
+
+[nix]
+pkgs = ["python310_full", "python310Packages.pip", "python310Packages.flask", "python310Packages.discord_py"]
+

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Completo: Bot Discord no Replit 24/7</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body>
+    <!-- Navegação -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🤖</span>
+                <span class="brand-text">Bot Discord Guide</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#inicio">Início</a></li>
+                <li><a href="#estrutura">Estrutura</a></li>
+                <li><a href="#configuracao">Configuração</a></li>
+                <li><a href="#uptimerobot">UptimeRobot</a></li>
+                <li><a href="#downloads">Downloads</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Hospede seu Bot Discord no Replit</h1>
+                <p>Guia completo para manter seu bot online 24/7 com servidor web Flask</p>
+                <div class="hero-buttons">
+                    <a href="#estrutura" class="btn btn-primary">Começar Agora</a>
+                    <a href="#downloads" class="btn btn-secondary">Baixar Arquivos</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="code-preview">
+                    <div class="code-header">
+                        <span>main.py</span>
+                    </div>
+                    <pre><code>import discord
+from discord.ext import commands
+
+bot = commands.Bot(intents=discord.Intents.default())
+
+@bot.event
+async def on_ready():
+    print(f'Bot conectado como {bot.user}')</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Estrutura do Projeto -->
+    <section id="estrutura" class="section">
+        <div class="container">
+            <h2>Estrutura do Projeto</h2>
+            <p>Organize seu projeto no Replit com a seguinte estrutura de arquivos:</p>
+            
+            <div class="file-tree">
+                <div class="file-item">
+                    <span class="file-icon">📄</span>
+                    <span>.replit</span>
+                </div>
+                <div class="file-item">
+                    <span class="file-icon">📄</span>
+                    <span>replit.nix</span>
+                </div>
+                <div class="file-item">
+                    <span class="file-icon">📄</span>
+                    <span>requirements.txt</span>
+                </div>
+                <div class="file-item">
+                    <span class="file-icon">📄</span>
+                    <span>main.py</span>
+                </div>
+                <div class="file-item">
+                    <span class="file-icon">📁</span>
+                    <span>cogs/</span>
+                    <div class="file-item nested">
+                        <span class="file-icon">📄</span>
+                        <span>support.py</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="main-py">main.py</button>
+                    <button class="tab-btn" data-tab="support-py">support.py</button>
+                    <button class="tab-btn" data-tab="requirements-txt">requirements.txt</button>
+                    <button class="tab-btn" data-tab="replit">replit & replit.nix</button>
+                </div>
+
+                <div id="main-py" class="tab-content active">
+                    <h3>main.py</h3>
+                    <p>Arquivo principal que inicializa o bot e o servidor Flask:</p>
+                    <pre><code class="language-python">import os
+import discord
+from discord import app_commands
+from discord.ext import commands
+from flask import Flask
+from threading import Thread
+
+# Configuração do Flask
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot do Discord está online!"
+
+def run_flask_server():
+    app.run(host='0.0.0.0', port=os.environ.get('PORT', 8080))
+
+# Configuração do Bot
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+
+class MyBot(commands.Bot):
+    def __init__(self):
+        super().__init__(command_prefix=commands.when_mentioned_or('/'), intents=intents)
+        self.initial_extensions = ['cogs.support']
+
+    async def setup_hook(self):
+        for ext in self.initial_extensions:
+            try:
+                await self.load_extension(ext)
+                print(f"Cog {ext} carregado com sucesso.")
+            except Exception as e:
+                print(f"Falha ao carregar cog {ext}: {e}")
+        await self.tree.sync()
+        print(f'Comandos de barra sincronizados para {self.user.name}')
+
+    async def on_ready(self):
+        print(f'Bot conectado como {self.user} (ID: {self.user.id})')
+
+bot = MyBot()
+
+def start_flask_thread():
+    t = Thread(target=run_flask_server)
+    t.daemon = True
+    t.start()
+
+if __name__ == '__main__':
+    start_flask_thread()
+    discord_token = os.environ.get('DISCORD_TOKEN')
+    if discord_token is None:
+        print("Erro: DISCORD_TOKEN não configurado")
+    else:
+        bot.run(discord_token)</code></pre>
+                </div>
+
+                <div id="support-py" class="tab-content">
+                    <h3>cogs/support.py</h3>
+                    <p>Cog com comandos de suporte melhorados:</p>
+                    <pre><code class="language-python">import discord
+from discord import app_commands
+from discord.ext import commands
+
+class Support(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="helpme", description="Exibe informações de ajuda")
+    async def helpme(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="💡 Central de Ajuda",
+            description="Aqui estão algumas formas de obter suporte:",
+            color=discord.Color.from_rgb(52, 152, 219)
+        )
+        embed.add_field(name="❓ FAQ", 
+                        value="Use `/faq` para ver perguntas frequentes.", 
+                        inline=False)
+        embed.add_field(name="🎫 Ticket", 
+                        value="Abra um ticket para falar com a equipe.", 
+                        inline=False)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="faq", description="Exibe FAQs do servidor")
+    async def faq(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="📚 Perguntas Frequentes",
+            color=discord.Color.from_rgb(46, 204, 113)
+        )
+        embed.add_field(name="Como me verificar?", 
+                        value="Visite #verificação para instruções.", 
+                        inline=False)
+        embed.add_field(name="Posso divulgar?", 
+                        value="Apenas em #parcerias respeitando as regras.", 
+                        inline=False)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="ping", description="Verifica latência do bot")
+    async def ping(self, interaction: discord.Interaction):
+        latency_ms = round(self.bot.latency * 1000)
+        embed = discord.Embed(
+            title="🏓 Pong!",
+            description=f"Latência: **{latency_ms}ms**",
+            color=discord.Color.from_rgb(241, 196, 15)
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+async def setup(bot):
+    await bot.add_cog(Support(bot))</code></pre>
+                </div>
+
+                <div id="requirements-txt" class="tab-content">
+                    <h3>requirements.txt</h3>
+                    <p>Dependências Python necessárias:</p>
+                    <pre><code class="language-text">discord.py
+Flask</code></pre>
+                </div>
+
+                <div id="replit" class="tab-content">
+                    <h3>.replit</h3>
+                    <pre><code class="language-text">run = ["python3", "main.py"]
+entrypoint = "main.py"
+modules = ["python3-basic"]
+
+[nix]
+pkgs = ["python310_full", "python310Packages.pip", "python310Packages.flask", "python310Packages.discord_py"]</code></pre>
+
+                    <h3>replit.nix</h3>
+                    <pre><code class="language-nix">{ pkgs }:
+
+pkgs.mkShell {
+  deps = with pkgs; [
+    python310Full
+    (python310.withPackages (ps: with ps; [
+      discord-py
+      flask
+    ]))
+  ];
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Configuração no Replit -->
+    <section id="configuracao" class="section section-alt">
+        <div class="container">
+            <h2>Configuração no Replit</h2>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Crie um novo Repl</h3>
+                        <p>Vá para <a href="https://replit.com/" target="_blank">Replit.com</a>, faça login, clique em <strong>+ Create Repl</strong>, selecione <strong>Python</strong> e dê um nome ao seu projeto.</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Transfira os Arquivos</h3>
+                        <p>Copie o conteúdo dos arquivos fornecidos acima para os arquivos correspondentes no seu Repl. Crie a pasta <strong>cogs</strong> e adicione o arquivo <strong>support.py</strong> dentro dela.</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Configure o Token do Discord</h3>
+                        <p>No Replit, clique no ícone de <strong>Secrets</strong> (cadeado) na barra lateral. Clique em <strong>New Secret</strong>, adicione:</p>
+                        <ul>
+                            <li><strong>Key:</strong> DISCORD_TOKEN</li>
+                            <li><strong>Value:</strong> Seu token do bot Discord</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Habilite as Intenções no Discord</h3>
+                        <p>Vá para <a href="https://discord.com/developers/applications" target="_blank">Discord Developer Portal</a>, selecione sua aplicação, vá para <strong>Bot</strong> e ative:</p>
+                        <ul>
+                            <li>PRESENCE INTENT</li>
+                            <li>SERVER MEMBERS INTENT</li>
+                            <li>MESSAGE CONTENT INTENT</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3>Execute o Bot</h3>
+                        <p>Clique no botão <strong>Run</strong> no Replit. O console deve mostrar que o bot está conectado e pronto para uso.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- UptimeRobot -->
+    <section id="uptimerobot" class="section">
+        <div class="container">
+            <h2>Mantendo o Bot Online 24/7 com UptimeRobot</h2>
+            
+            <div class="info-box">
+                <p><strong>⚠️ Por quê?</strong> O Replit hiberna projetos inativos. O UptimeRobot "pinga" seu servidor Flask regularmente, mantendo-o ativo.</p>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Obtenha o URL do seu Repl</h3>
+                        <p>Quando seu bot estiver rodando, você verá uma janela de preview com a mensagem "Bot do Discord está online!". Copie o URL desta janela (ex: <code>https://seu-repl.seu-usuario.repl.co</code>).</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Configure o UptimeRobot</h3>
+                        <p>Vá para <a href="https://uptimerobot.com/" target="_blank">UptimeRobot.com</a>, crie uma conta (gratuita), clique em <strong>Add New Monitor</strong> e configure:</p>
+                        <ul>
+                            <li><strong>Monitor Type:</strong> HTTP(s)</li>
+                            <li><strong>Friendly Name:</strong> MeuBotDiscord-KeepAlive</li>
+                            <li><strong>URL:</strong> Cole o URL do seu Repl</li>
+                            <li><strong>Monitoring Interval:</strong> 5 minutos</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Pronto!</h3>
+                        <p>O UptimeRobot agora "pinga" seu servidor a cada 5 minutos, mantendo seu bot online 24/7.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Downloads -->
+    <section id="downloads" class="section section-alt">
+        <div class="container">
+            <h2>Downloads dos Arquivos</h2>
+            <p>Baixe todos os arquivos necessários para começar:</p>
+            
+            <div class="download-grid">
+                <a href="files/main.py" class="download-card" download>
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">main.py</span>
+                    <span class="file-desc">Arquivo principal do bot</span>
+                </a>
+                <a href="files/support.py" class="download-card" download>
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">support.py</span>
+                    <span class="file-desc">Cog de suporte</span>
+                </a>
+                <a href="files/requirements.txt" class="download-card" download>
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">requirements.txt</span>
+                    <span class="file-desc">Dependências Python</span>
+                </a>
+                <a href="files/.replit" class="download-card" download>
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">.replit</span>
+                    <span class="file-desc">Configuração Replit</span>
+                </a>
+                <a href="files/replit.nix" class="download-card" download>
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">replit.nix</span>
+                    <span class="file-desc">Dependências Nix</span>
+                </a>
+                <a href="files/instrucoes.md" class="download-card" download>
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">instrucoes.md</span>
+                    <span class="file-desc">Guia completo em Markdown</span>
+                </a>
+            </div>
+
+            <div class="info-box">
+                <p><strong>💡 Dica:</strong> Você também pode clonar o repositório GitHub para obter todos os arquivos de uma vez.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Bot Discord Guide. Criado com ❤️ para a comunidade Discord.</p>
+            <div class="social-links">
+                <a href="https://discord.com/" target="_blank">Discord</a>
+                <a href="https://replit.com/" target="_blank">Replit</a>
+                <a href="https://uptimerobot.com/" target="_blank">UptimeRobot</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+
